@@ -13,6 +13,9 @@
 #include "TankGameplayMath.h"
 #include "TankPawn.h"
 #include "TankWeaponComponent.h"
+#include "TankPlayerState.h"
+#include "TankGameState.h"
+#include "TankGameMode.h"
 #include "UnrealClient.h"
 
 void ATankPlayerController::BeginPlay()
@@ -405,4 +408,59 @@ void ATankPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	ClearCachedInput();
 	RemoveTankInputContext();
 	Super::EndPlay(EndPlayReason);
+}
+
+void ATankPlayerController::ReadyUp()
+{
+	SubmitReady(true);
+}
+
+void ATankPlayerController::Notready()
+{
+	SubmitReady(false);
+}
+
+void ATankPlayerController::SubmitReady(bool bReady)
+{
+	// Check that the controller is local and that the world exists before proceeding with the ready state submission.
+	if (!IsLocalController() || !GetWorld())
+		return;
+
+	if (HasAuthority())
+	{
+		AcceptReady(bReady);
+	}
+	else
+	{
+		ServerSetReady(bReady);
+	}
+}
+
+void ATankPlayerController::ServerSetReady_Implementation(bool bReady)
+{
+	AcceptReady(bReady);
+}
+
+void ATankPlayerController::AcceptReady(bool bReady)
+{
+	// Ensure that the controller has authority, is not a client, is not being destroyed, has begun play, and that the world exists before accepting the ready state.
+	if (!HasAuthority() || GetNetMode() == NM_Client || IsActorBeingDestroyed() || !HasActorBegunPlay() || !GetWorld())
+	{
+		return;
+	}
+
+	ATankPlayerState* TankPlayerState = Cast<ATankPlayerState>(PlayerState);
+	const ATankGameState* TankGameState = GetWorld()->GetGameState<ATankGameState>();
+	if (!TankPlayerState || !TankGameState || TankGameState->GetMatchPhase() == ETankMatchPhase::Playing)
+	{
+		return;
+	}
+
+	// Update the ready state in the player state.
+	TankPlayerState->SetReadyFromServer(bReady);
+	if (ATankGameMode* TankGameMode = GetWorld()->GetAuthGameMode<ATankGameMode>())
+	{
+		// GetAuthGameMode is only valid on the server, so we check for authority before calling it.
+		TankGameMode->HandlePlayerReadyChanged();
+	}
 }

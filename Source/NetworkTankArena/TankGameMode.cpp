@@ -1,6 +1,8 @@
 #include "TankGameMode.h"
 
 #include "TankPawn.h"
+#include "TankGameState.h"
+#include "TankPlayerState.h"
 #include "TankDamageTestTarget.h"
 #include "TankPlayerController.h"
 #include "Engine/World.h"
@@ -14,6 +16,9 @@ ATankGameMode::ATankGameMode()
 	static ConstructorHelpers::FClassFinder<ATankPlayerController> ControllerClass(TEXT("/Game/Blueprints/BP_TankPlayerController"));
 	DefaultPawnClass = TankClass.Succeeded() ? TankClass.Class.Get() : ATankPawn::StaticClass();
 	PlayerControllerClass = ControllerClass.Succeeded() ? ControllerClass.Class.Get() : ATankPlayerController::StaticClass();
+
+	GameStateClass = ATankGameState::StaticClass();
+	PlayerStateClass = ATankPlayerState::StaticClass();
 }
 
 void ATankGameMode::StartPlay()
@@ -29,4 +34,56 @@ void ATankGameMode::StartPlay()
 		}
 	}
 	Super::StartPlay();
+}
+
+void ATankGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	EvaluateReadyGate();
+}
+
+void ATankGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+	EvaluateReadyGate();
+}
+
+void ATankGameMode::HandlePlayerReadyChanged()
+{
+	EvaluateReadyGate();
+}
+
+void ATankGameMode::EvaluateReadyGate()
+{
+	ATankGameState* State = GetGameState<ATankGameState>();
+	if (!State || State->GetMatchPhase() == ETankMatchPhase::Playing)
+		return;
+
+	int32 PlayerCount = 0;
+	bool bAllReady = true;
+	for (APlayerState* PlayerState : State->PlayerArray)
+	{
+		const ATankPlayerState* TankPlayerState = Cast<ATankPlayerState>(PlayerState);
+		if (!TankPlayerState)
+			continue;
+
+		++PlayerCount;
+		bAllReady &= TankPlayerState->IsReady();
+	}
+
+	ETankMatchPhase NextPhase;
+	if (PlayerCount < 2)
+	{
+		NextPhase = ETankMatchPhase::WaitingForPlayers;
+	}
+	else if (bAllReady)
+	{
+		NextPhase = ETankMatchPhase::Playing;
+	}
+	else
+	{
+		NextPhase = ETankMatchPhase::WaitingForReady;
+	}
+
+	State->SetMatchPhaseFromServer(NextPhase);
 }

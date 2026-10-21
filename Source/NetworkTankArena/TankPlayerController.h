@@ -34,6 +34,12 @@ public:
 	UFUNCTION(Exec, BlueprintCallable, Category = "Tank|Localhost")
 	void JoinLocalhost();
 
+	// Exec = console command, BlueprintCallable = callable from a Blueprint widget.
+	UFUNCTION(Exec, BluePrintCallable, Category = "Tank|Match")
+	void ReadyUp();
+	UFUNCTION(Exec, BluePrintCallable, Category = "Tank|Match")
+	void Notready();
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void ReceivedPlayer() override;
@@ -62,6 +68,11 @@ private:
 	void SubmitLocalFireRequest(ATankPawn* Tank, const FVector& AimWorldPoint);
 	void AcceptFireRequest(ATankPawn* FiringTank, const FTankFireRequest& Request);
 	void DispatchPendingFire(const FTankControlIntent& Intent);
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetReady(bool bReady);
+	void SubmitReady(bool bReady);
+	void AcceptReady(bool bReady);
 
 	void UpdateThrottle(const FInputActionValue& Value);
 	void UpdateTurn(const FInputActionValue& Value);
