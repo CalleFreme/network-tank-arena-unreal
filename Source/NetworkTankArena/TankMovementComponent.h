@@ -18,10 +18,11 @@ public:
 	double GetGameplayPlaneZ() const { return GetPlaneConstraintOrigin().Z; }
 	virtual float GetMaxSpeed() const override;
 	float GetTurnRateDegreesPerSecond() const { return TurnRateDegreesPerSecond; }
-
-private:
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement", meta = (ClampMin = "0", Units = "cm/s"))
 	float ForwardSpeed = 500.f;
+	
+private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Movement", meta = (ClampMin = "0", Units = "cm/s"))
 	float ReverseSpeed = 300.f;

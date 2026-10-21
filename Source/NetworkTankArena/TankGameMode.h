@@ -16,5 +16,5 @@ public:
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Tank|Combat Test")
-	FVector DamageTargetLocation = FVector(0.0, 500.0, 100.0);
+	FVector DamageTargetLocation = FVector(-100.0, 100.0, 100.0);
 };

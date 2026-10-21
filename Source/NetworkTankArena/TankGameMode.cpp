@@ -5,6 +5,7 @@
 #include "TankPlayerController.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "SpeedBoost.h"
 #include "UObject/ConstructorHelpers.h"
 
 ATankGameMode::ATankGameMode()
@@ -18,15 +19,16 @@ ATankGameMode::ATankGameMode()
 
 void ATankGameMode::StartPlay()
 {
-	// GameMode exists on the server. A placed target replaces this replicated fixture.
-	if (HasAuthority() && GetNetMode() != NM_Client && !TActorIterator<ATankDamageTestTarget>(GetWorld()))
+	
+	if (HasAuthority() && GetNetMode() != NM_Client && !TActorIterator<ASpeedBoost>(GetWorld()))
 	{
 		FActorSpawnParameters Params;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-		if (!GetWorld()->SpawnActor<ATankDamageTestTarget>(DamageTargetLocation, FRotator::ZeroRotator, Params))
+		if (!GetWorld()->SpawnActor<ASpeedBoost>(DamageTargetLocation, FRotator::ZeroRotator, Params))
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Damage test target fixture could not spawn; check map clearance."));
 		}
 	}
+	
 	Super::StartPlay();
 }
