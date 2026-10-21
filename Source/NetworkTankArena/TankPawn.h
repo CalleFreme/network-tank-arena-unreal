@@ -29,9 +29,27 @@ public:
 
 	void SubmitControlIntent(const FTankControlIntent& Intent);
 	void ClearControlIntent();
+	
+	UFUNCTION()
+	void BeginOverlap(
+		UPrimitiveComponent* OverlappedComponent,
+		AActor* OtherActor,
+		UPrimitiveComponent* OtherComp,
+		int32 OtherBodyIndex,
+		bool bFromSweep,
+		const FHitResult& SweepResult);
+	
+	void ApplySpeedBoost();
+	void ResetSpeedBoost();
+	
+	UTankMovementComponent* MovementComponent();
+	
 	double GetGameplayPlaneZ() const;
 	float GetCanonicalTurretWorldYaw() const { return CanonicalTurretWorldYaw; }
 	UTankWeaponComponent* GetWeaponComponent() const { return TankWeapon; }
+	
+	FTimerHandle SpeedBoostTimerHandle;
+	float SpeedBoostDuration = 5.f;
 
 protected:
 	virtual void BeginPlay() override;
@@ -47,7 +65,7 @@ private:
 
 	void UpdateControllerTickPrerequisite();
 	void ApplyPresentation(float DeltaTime);
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank|Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> CollisionRoot;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tank|Components", meta = (AllowPrivateAccess = "true"))
@@ -93,4 +111,6 @@ private:
 	float CurrentBankDegrees = 0.f;
 	float PreviousPresentationYaw = 0.f;
 	TWeakObjectPtr<AController> TickController;
+	
+
 };

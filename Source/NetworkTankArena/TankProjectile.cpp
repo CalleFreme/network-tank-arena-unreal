@@ -31,7 +31,11 @@ ATankProjectile::ATankProjectile()
 	Mesh->SetCanEverAffectNavigation(false);
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Ball(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	Mesh->SetStaticMesh(Ball.Object);
-	Mesh->SetRelativeScale3D(FVector(0.2)); // Engine sphere diameter 100 cm -> 20 cm.
+	
+	static ConstructorHelpers::FObjectFinder<UMaterial> Material(TEXT("/Engine/EngineMaterials/M_Projectile.M_Projectile"));
+	Mesh->SetMaterial(0, Material.Object);
+
+	Mesh->SetRelativeScale3D(FVector(0.5)); // Engine sphere diameter 100 cm -> 20 cm.
 }
 
 void ATankProjectile::Initialize(ATankPawn* Shooter, const FVector& Direction)

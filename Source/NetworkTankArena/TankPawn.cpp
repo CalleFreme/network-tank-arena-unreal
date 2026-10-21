@@ -1,5 +1,6 @@
 #include "TankPawn.h"
 
+#include "SpeedBoost.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
@@ -31,7 +32,8 @@ ATankPawn::ATankPawn()
 	CollisionRoot->SetCollisionProfileName(TEXT("Pawn"));
 	CollisionRoot->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	CollisionRoot->SetSimulatePhysics(false);
-
+	CollisionRoot->OnComponentBeginOverlap.AddDynamic(this, &ATankPawn::BeginOverlap);
+	
 	VisualRoot = CreateDefaultSubobject<USceneComponent>(TEXT("VisualRoot"));
 	VisualRoot->SetupAttachment(CollisionRoot);
 	VisualRoot->SetRelativeLocation(FVector(0.0, 0.0, -65.0));
@@ -154,6 +156,30 @@ void ATankPawn::Tick(float DeltaTime)
 	ApplyPresentation(DeltaTime);
 }
 
+void ATankPawn::BeginOverlap(
+	UPrimitiveComponent* OverlappedComponent, 
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (!HasAuthority() || !OtherActor || OtherActor->ActorHasTag("Tank")) { return; }
+	
+	{
+		UE_LOG(LogTemp, Display, TEXT("Touching Touching: %s"), *OtherActor->GetName());
+	}
+	
+	if (ASpeedBoost* Pickup = Cast<ASpeedBoost>(OtherActor))
+	{
+		if (!Pickup) { return; }
+		
+		ApplySpeedBoost();
+		Pickup->Destroy();
+	}
+
+}
+
 void ATankPawn::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -185,6 +211,26 @@ void ATankPawn::Restart()
 	Super::Restart();
 	ClearControlIntent();
 	UpdateControllerTickPrerequisite();
+}
+
+void ATankPawn::ApplySpeedBoost()
+{
+	UTankMovementComponent* TankMovementComponent = Cast<UTankMovementComponent>(TankMovement);
+	TankMovement->ForwardSpeed = 1000.f;
+	
+	GetWorld()->GetTimerManager().SetTimer(
+		SpeedBoostTimerHandle,
+		this,
+		&ATankPawn::ResetSpeedBoost,
+		SpeedBoostDuration,
+		false
+		);
+}
+
+void ATankPawn::ResetSpeedBoost()
+{
+	GetWorld()->GetTimerManager().ClearTimer(SpeedBoostTimerHandle);
+	TankMovement->ForwardSpeed = 600.f;
 }
 
 void ATankPawn::ApplyPresentation(float DeltaTime)
@@ -240,3 +286,6 @@ void ATankPawn::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	TickController.Reset();
 	Super::EndPlay(EndPlayReason);
 }
+
+
+
